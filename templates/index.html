@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineMatch - Movie Recommendations</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo"><i class="fas fa-clapperboard"></i> CineMatch</div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link active">Discover</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">Find Your Next Favorite</h1>
+            <p class="hero-subtitle">Discover movies with AI-powered recommendations</p>
+        </div>
+    </div>
+
+    <div class="search-section">
+        <div class="container">
+            <form id="recommendForm" class="search-form">
+                <div class="form-group">
+                    <label for="movieInput">Movie Name</label>
+                    <input type="text" id="movieInput" list="movieList" placeholder="Type a movie name..."
+                        autocomplete="off" required>
+                    <datalist id="movieList">
+                        {% for movie in movies %}
+                        <option value="{{ movie }}">
+                            {% endfor %}
+                    </datalist>
+                </div>
+
+                <div class="form-group">
+                    <label for="genreSelect">Genre (Optional)</label>
+                    <select id="genreSelect">
+                        <option value="">All Genres</option>
+                        {% for genre in genres %}
+                        <option value="{{ genre }}">{{ genre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="languageSelect">Language (Optional)</label>
+                    <select id="languageSelect">
+                        <option value="">All Languages</option>
+                        {% for language in languages %}
+                        <option value="{{ language }}">{{ language }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-recommend">Get Recommendations</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="featuredSection" class="section featured-section">
+        <div class="container">
+            <h2 class="section-title">🎬 Top Picks for You</h2>
+            <div class="cards-grid" id="featuredGrid"></div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Finding recommendations...</p>
+    </div>
+
+    <div id="notFound" class="not-found-section" style="display: none;">
+        <div class="container">
+            <div class="not-found-message">
+                <i class="fas fa-inbox"></i>
+                <h2>Sorry, we don't have this movie info</h2>
+                <p>Here are some movies you can explore:</p>
+            </div>
+            <div class="cards-grid" id="suggestionsGrid"></div>
+        </div>
+    </div>
+
+    <div id="results" class="results-section" style="display: none;">
+        <div class="container">
+            <h2 class="section-title" id="resultsTitle"></h2>
+            <div class="cards-grid" id="resultsGrid"></div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div class="modal-gallery" id="modalGallery"></div>
+        </div>
+    </div>
+
+    <button id="backToTop" class="back-to-top" title="Go to top"><i class="fas fa-arrow-up"></i></button>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p class="built-by"><i class="fas fa-user-tie"></i> Built By: <strong>Jivitesh</strong></p>
+            <div class="footer-links">
+                <a href="mailto:jivinaragam@gmail.com"><i class="fas fa-envelope"></i> jivinaragam@gmail.com</a>
+                <a href="https://www.linkedin.com/in/naragam-jivitesh-71a4b8313" target="_blank"><i
+                        class="fab fa-linkedin"></i> LinkedIn</a>
+                <a href="https://github.com/jiviteshh" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        window.initialFeatured = {{ featured | tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // The 'featured' section was removed from the HTML, so 'featuredGrid' will not exist.
+            // This script block will now effectively do nothing unless a 'featuredGrid' element is added back.
+            const grid = document.getElementById('featuredGrid');
+            if (grid) {
+                grid.innerHTML = '';
+                window.initialFeatured.forEach((m, i) => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.animationDelay = i * 0.08 + 's';
+                    card.onclick = () => openModal(m);
+
+                    const genreList = m.genres.split(' ').slice(0, 2).join(', ');
+                    const langList = m.languages.split(' ').join('/'); // This variable is defined but not used in the card template
+                    const poster = m.poster_url && m.poster_url.trim() ?
+                        `<img src="${m.poster_url}" alt="${m.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                         <div class="card-placeholder" style="display:none;">${m.title}</div>` :
+                        `<div class="card-placeholder">${m.title}</div>`;
+
+                    card.innerHTML = `
+                        <div class="card-poster">${poster}</div>
+                        <div class="card-content">
+                            <h4 class="card-title">${m.title}</h4>
+                            <div class="card-meta">
+                                <span class="badge"><strong>${m.genres.split(' ')[0]}</strong></span>
+                                <span class="card-rating">⭐ ${m.rating}/10</span>
+                            </div>
+                            <p class="card-languages"><strong>Available In:</strong> ${langList}</p>
+                            <p class="card-overview">${(m.overview || '').substring(0, 80)}...</p>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

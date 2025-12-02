@@ -1,0 +1,30 @@
+# User specified large datasets
+dataset/credits.csv
+dataset/ratings.csv
+movies.csv
+merged_movies.csv
+
+# Other large data files
+final_movies.csv
+dataset/movies_metadata.csv
+dataset/keywords.csv
+dataset/ratings_small.csv
+dataset/links.csv
+dataset/links_small.csv
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDEs
+.vscode/
+.idea/
